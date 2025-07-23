@@ -1,0 +1,27 @@
+[project]
+name = "mcp-server-neo4j-ehr"
+version = "0.1.0"
+description = "MCP server for querying a Neo4j EHR database."
+readme = "README.md"
+authors = [
+    { name = "Your Name", email = "your@email.com" }
+]
+requires-python = ">=3.10"
+dependencies = [
+    "click>=8.1.7",
+    "mcp>=1.0.0",
+    "pydantic>=2.0.0",
+    "neo4j>=5.0.0",
+    "python-dotenv>=1.0.0",
+    "openai>=1.0.0",
+]
+
+[project.scripts]
+mcp-server-neo4j-ehr = "mcp_server_neo4j_ehr.__main__:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+dev-dependencies = ["pytest>=8.0.0"]
