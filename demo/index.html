@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neo4j MCP Server Demo</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Neo4j EHR MCP Server Demo</h1>
+            <div class="connection-status">
+                <div class="status-indicator" id="status-indicator"></div>
+                <span id="status-text">Disconnected</span>
+                <input type="text" id="server-url" placeholder="Server URL" value="http://localhost:8080">
+                <button id="connect-btn" onclick="toggleConnection()">Connect</button>
+            </div>
+        </header>
+
+        <main>
+            <div class="tabs">
+                <button class="tab-button active" onclick="showTab('patient')">Patient Info</button>
+                <button class="tab-button" onclick="showTab('search-notes')">Search Notes</button>
+                <button class="tab-button" onclick="showTab('diagnoses')">Diagnoses</button>
+                <button class="tab-button" onclick="showTab('medications')">Medications</button>
+                <button class="tab-button" onclick="showTab('procedures')">Procedures</button>
+                <button class="tab-button" onclick="showTab('lab-events')">Lab Events</button>
+                <button class="tab-button" onclick="showTab('natural-query')">Natural Query</button>
+                <button class="tab-button" onclick="showTab('schema')">Schema</button>
+            </div>
+
+            <!-- Patient Information Tool -->
+            <div id="patient-tab" class="tab-content active">
+                <h2>Patient Information</h2>
+                <div class="tool-section">
+                    <div class="input-group">
+                        <label for="patient-id">Patient ID:</label>
+                        <input type="text" id="patient-id" placeholder="e.g., 10461137" value="10461137">
+                    </div>
+                    <div class="input-group">
+                        <label>Include:</label>
+                        <div class="checkbox-group">
+                            <label><input type="checkbox" name="include" value="demographics" checked> Demographics</label>
+                            <label><input type="checkbox" name="include" value="admissions"> Admissions</label>
+                            <label><input type="checkbox" name="include" value="diagnoses"> Diagnoses</label>
+                            <label><input type="checkbox" name="include" value="medications"> Medications</label>
+                            <label><input type="checkbox" name="include" value="procedures"> Procedures</label>
+                            <label><input type="checkbox" name="include" value="lab_events"> Lab Events</label>
+                            <label><input type="checkbox" name="include" value="notes"> Clinical Notes</label>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="patient-format">Format:</label>
+                        <select id="patient-format">
+                            <option value="json">JSON</option>
+                            <option value="table">Table</option>
+                            <option value="markdown">Markdown</option>
+                        </select>
+                    </div>
+                    <button class="primary-btn" onclick="getPatientInfo()">Get Patient Info</button>
+                </div>
+            </div>
+
+            <!-- Search Notes Tool -->
+            <div id="search-notes-tab" class="tab-content">
+                <h2>Search Clinical Notes</h2>
+                <div class="tool-section">
+                    <div class="input-group">
+                        <label for="search-query">Search Query:</label>
+                        <input type="text" id="search-query" placeholder="e.g., chest pain" value="chest pain">
+                    </div>
+                    <div class="input-group">
+                        <label for="search-type">Search Type:</label>
+                        <select id="search-type">
+                            <option value="text">Text Search</option>
+                            <option value="semantic">Semantic Search</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="search-patient-id">Patient ID (optional):</label>
+                        <input type="text" id="search-patient-id" placeholder="Leave empty for all patients">
+                    </div>
+                    <div class="input-group">
+                        <label for="search-admission-id">Admission ID (optional):</label>
+                        <input type="text" id="search-admission-id" placeholder="Leave empty for all admissions">
+                    </div>
+                    <div class="input-group">
+                        <label for="search-limit">Limit:</label>
+                        <input type="number" id="search-limit" value="10" min="1" max="100">
+                    </div>
+                    <div class="input-group">
+                        <label for="search-format">Format:</label>
+                        <select id="search-format">
+                            <option value="json">JSON</option>
+                            <option value="table">Table</option>
+                            <option value="markdown">Markdown</option>
+                        </select>
+                    </div>
+                    <button class="primary-btn" onclick="searchNotes()">Search Notes</button>
+                </div>
+            </div>
+
+            <!-- Diagnoses Tool -->
+            <div id="diagnoses-tab" class="tab-content">
+                <h2>List Diagnoses</h2>
+                <div class="tool-section">
+                    <div class="input-group">
+                        <label for="diagnoses-patient-id">Patient ID (optional):</label>
+                        <input type="text" id="diagnoses-patient-id" placeholder="e.g., 10461137">
+                    </div>
+                    <div class="input-group">
+                        <label for="diagnoses-admission-id">Admission ID (optional):</label>
+                        <input type="text" id="diagnoses-admission-id" placeholder="e.g., 125957">
+                    </div>
+                    <div class="input-group">
+                        <label for="diagnoses-limit">Limit:</label>
+                        <input type="number" id="diagnoses-limit" value="20" min="1" max="100">
+                    </div>
+                    <div class="input-group">
+                        <label for="diagnoses-format">Format:</label>
+                        <select id="diagnoses-format">
+                            <option value="json">JSON</option>
+                            <option value="table">Table</option>
+                            <option value="markdown">Markdown</option>
+                        </select>
+                    </div>
+                    <button class="primary-btn" onclick="listDiagnoses()">List Diagnoses</button>
+                </div>
+            </div>
+
+            <!-- Medications Tool -->
+            <div id="medications-tab" class="tab-content">
+                <h2>List Medications</h2>
+                <div class="tool-section">
+                    <div class="input-group">
+                        <label for="medications-patient-id">Patient ID (optional):</label>
+                        <input type="text" id="medications-patient-id" placeholder="e.g., 10461137">
+                    </div>
+                    <div class="input-group">
+                        <label for="medications-admission-id">Admission ID (optional):</label>
+                        <input type="text" id="medications-admission-id" placeholder="e.g., 125957">
+                    </div>
+                    <div class="input-group">
+                        <label for="medications-limit">Limit:</label>
+                        <input type="number" id="medications-limit" value="20" min="1" max="100">
+                    </div>
+                    <div class="input-group">
+                        <label for="medications-format">Format:</label>
+                        <select id="medications-format">
+                            <option value="json">JSON</option>
+                            <option value="table">Table</option>
+                            <option value="markdown">Markdown</option>
+                        </select>
+                    </div>
+                    <button class="primary-btn" onclick="listMedications()">List Medications</button>
+                </div>
+            </div>
+
+            <!-- Procedures Tool -->
+            <div id="procedures-tab" class="tab-content">
+                <h2>List Procedures</h2>
+                <div class="tool-section">
+                    <div class="input-group">
+                        <label for="procedures-patient-id">Patient ID (optional):</label>
+                        <input type="text" id="procedures-patient-id" placeholder="e.g., 10461137">
+                    </div>
+                    <div class="input-group">
+                        <label for="procedures-admission-id">Admission ID (optional):</label>
+                        <input type="text" id="procedures-admission-id" placeholder="e.g., 125957">
+                    </div>
+                    <div class="input-group">
+                        <label for="procedures-limit">Limit:</label>
+                        <input type="number" id="procedures-limit" value="20" min="1" max="100">
+                    </div>
+                    <div class="input-group">
+                        <label for="procedures-format">Format:</label>
+                        <select id="procedures-format">
+                            <option value="json">JSON</option>
+                            <option value="table">Table</option>
+                            <option value="markdown">Markdown</option>
+                        </select>
+                    </div>
+                    <button class="primary-btn" onclick="listProcedures()">List Procedures</button>
+                </div>
+            </div>
+
+            <!-- Lab Events Tool -->
+            <div id="lab-events-tab" class="tab-content">
+                <h2>List Lab Events</h2>
+                <div class="tool-section">
+                    <div class="input-group">
+                        <label for="lab-patient-id">Patient ID (optional):</label>
+                        <input type="text" id="lab-patient-id" placeholder="e.g., 10461137">
+                    </div>
+                    <div class="input-group">
+                        <label for="lab-admission-id">Admission ID (optional):</label>
+                        <input type="text" id="lab-admission-id" placeholder="e.g., 125957">
+                    </div>
+                    <div class="input-group">
+                        <label for="lab-limit">Limit:</label>
+                        <input type="number" id="lab-limit" value="20" min="1" max="100">
+                    </div>
+                    <div class="input-group">
+                        <label for="lab-format">Format:</label>
+                        <select id="lab-format">
+                            <option value="json">JSON</option>
+                            <option value="table">Table</option>
+                            <option value="markdown">Markdown</option>
+                        </select>
+                    </div>
+                    <button class="primary-btn" onclick="listLabEvents()">List Lab Events</button>
+                </div>
+            </div>
+
+            <!-- Natural Query Tool -->
+            <div id="natural-query-tab" class="tab-content">
+                <h2>Natural Language Query</h2>
+                <div class="tool-section">
+                    <div class="input-group">
+                        <label for="natural-query">Ask a question about the data:</label>
+                        <textarea id="natural-query" rows="4" placeholder="e.g., Which patients had both diabetes and hypertension?">Which patients had both diabetes and hypertension?</textarea>
+                    </div>
+                    <div class="input-group">
+                        <label for="natural-limit">Limit:</label>
+                        <input type="number" id="natural-limit" value="10" min="1" max="100">
+                    </div>
+                    <div class="input-group">
+                        <label for="natural-format">Format:</label>
+                        <select id="natural-format">
+                            <option value="json">JSON</option>
+                            <option value="table">Table</option>
+                            <option value="markdown">Markdown</option>
+                        </select>
+                    </div>
+                    <button class="primary-btn" onclick="naturalQuery()">Ask Question</button>
+                    <p class="note">Note: This requires an OpenAI API key to be configured on the server.</p>
+                </div>
+            </div>
+
+            <!-- Schema Tool -->
+            <div id="schema-tab" class="tab-content">
+                <h2>Database Schema</h2>
+                <div class="tool-section">
+                    <div class="input-group">
+                        <label for="schema-format">Format:</label>
+                        <select id="schema-format">
+                            <option value="json">JSON</option>
+                            <option value="table">Table</option>
+                            <option value="markdown">Markdown</option>
+                        </select>
+                    </div>
+                    <button class="primary-btn" onclick="getSchema()">Get Schema</button>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="results-section">
+                <h3>Results</h3>
+                <div class="results-header">
+                    <span id="results-info"></span>
+                    <button class="secondary-btn" onclick="clearResults()">Clear</button>
+                </div>
+                <div id="loading" class="loading" style="display: none;">
+                    <div class="spinner"></div>
+                    <span>Loading...</span>
+                </div>
+                <div id="results" class="results"></div>
+            </div>
+        </main>
+
+        <footer>
+            <p>Neo4j MCP Server Demo - Test interface for EHR data queries</p>
+            <p>Sample Patient IDs: 10461137, 11578849, 12017557, 14037695</p>
+        </footer>
+    </div>
+
+    <script src="mcp-client.js"></script>
+</body>
+</html>

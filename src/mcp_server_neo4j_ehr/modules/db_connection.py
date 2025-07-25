@@ -56,50 +56,232 @@ class Neo4jConnection:
             return False
     
     async def get_schema(self) -> Dict[str, Any]:
-        """Get the database schema information."""
+        """Get the database schema information - hardcoded for EHR data."""
         schema = {
-            "nodes": [],
-            "relationships": [],
-            "constraints": [],
-            "indexes": []
+            "nodes": [
+                {
+                    "label": "Patient",
+                    "properties": [
+                        "subject_id",  # unique, indexed
+                        "gender",      # indexed
+                        "anchor_age",
+                        "anchor_year",
+                        "anchor_year_group",
+                        "dod"         # date of death
+                    ],
+                    "property_types": {
+                        "subject_id": "string (unique, indexed)",
+                        "gender": "string (indexed)",
+                        "anchor_age": "integer",
+                        "anchor_year": "integer", 
+                        "anchor_year_group": "string",
+                        "dod": "datetime"
+                    }
+                },
+                {
+                    "label": "Admission",
+                    "properties": [
+                        "hadm_id",            # unique, indexed
+                        "admission_type",     # indexed
+                        "admittime",
+                        "dischtime",
+                        "deathtime",
+                        "admission_location",
+                        "discharge_location",
+                        "insurance",
+                        "language",
+                        "marital_status",
+                        "race",
+                        "edregtime",
+                        "edouttime",
+                        "hospital_expire_flag",
+                        "admit_provider_id"
+                    ],
+                    "property_types": {
+                        "hadm_id": "string (unique, indexed)",
+                        "admission_type": "string (indexed)",
+                        "admittime": "datetime",
+                        "dischtime": "datetime",
+                        "deathtime": "datetime",
+                        "admission_location": "string",
+                        "discharge_location": "string",
+                        "insurance": "string",
+                        "language": "string",
+                        "marital_status": "string",
+                        "race": "string",
+                        "edregtime": "datetime",
+                        "edouttime": "datetime",
+                        "hospital_expire_flag": "integer",
+                        "admit_provider_id": "string"
+                    }
+                },
+                {
+                    "label": "DischargeNote",
+                    "properties": [
+                        "note_id",       # unique, indexed
+                        "hadm_id",       # indexed
+                        "subject_id",    # indexed
+                        "note_type",     # indexed
+                        "text",          # indexed
+                        "note_seq",
+                        "charttime",
+                        "storetime",
+                        "embedding",
+                        "embedding_model",
+                        "embedding_created"
+                    ],
+                    "property_types": {
+                        "note_id": "string (unique, indexed)",
+                        "hadm_id": "string (indexed)",
+                        "subject_id": "string (indexed)",
+                        "note_type": "string (indexed)",
+                        "text": "string (indexed)",
+                        "note_seq": "integer",
+                        "charttime": "datetime",
+                        "storetime": "datetime",
+                        "embedding": "float[]",
+                        "embedding_model": "string",
+                        "embedding_created": "datetime"
+                    }
+                },
+                {
+                    "label": "RadiologyReport",
+                    "properties": [
+                        "note_id",       # unique, indexed
+                        "hadm_id",       # indexed
+                        "subject_id",    # indexed
+                        "note_type",     # indexed
+                        "text",          # indexed
+                        "note_seq",
+                        "charttime",
+                        "storetime",
+                        "embedding",
+                        "embedding_model",
+                        "embedding_created"
+                    ],
+                    "property_types": {
+                        "note_id": "string (unique, indexed)",
+                        "hadm_id": "string (indexed)",
+                        "subject_id": "string (indexed)",
+                        "note_type": "string (indexed)",
+                        "text": "string (indexed)",
+                        "note_seq": "integer",
+                        "charttime": "datetime",
+                        "storetime": "datetime",
+                        "embedding": "float[]",
+                        "embedding_model": "string",
+                        "embedding_created": "datetime"
+                    }
+                },
+                {
+                    "label": "LabEvent",
+                    "properties": [
+                        "lab_event_id",    # unique, indexed
+                        "subject_id",      # indexed
+                        "hadm_id",         # indexed
+                        "charttime",       # indexed
+                        "label",           # indexed
+                        "itemid",          # indexed
+                        "category",        # indexed
+                        "flag",            # indexed
+                        "value",           # indexed
+                        "comments",        # indexed
+                        "ref_range_upper",
+                        "ref_range_lower",
+                        "fluid",
+                        "priority",
+                        "storetime"
+                    ],
+                    "property_types": {
+                        "lab_event_id": "string (unique, indexed)",
+                        "subject_id": "string (indexed)",
+                        "hadm_id": "string (indexed)",
+                        "charttime": "datetime (indexed)",
+                        "label": "string (indexed)",
+                        "itemid": "string (indexed)",
+                        "category": "string (indexed)",
+                        "flag": "string (indexed)",
+                        "value": "string (indexed)",
+                        "comments": "string (indexed)",
+                        "ref_range_upper": "float",
+                        "ref_range_lower": "float",
+                        "fluid": "string",
+                        "priority": "string",
+                        "storetime": "datetime"
+                    }
+                },
+                {
+                    "label": "Medication",
+                    "properties": [
+                        "medication",    # indexed
+                        "route",         # indexed
+                        "hadm_id",
+                        "subject_id",
+                        "frequency",
+                        "verifiedtime"
+                    ],
+                    "property_types": {
+                        "medication": "string (indexed)",
+                        "route": "string (indexed)",
+                        "hadm_id": "string",
+                        "subject_id": "string",
+                        "frequency": "string",
+                        "verifiedtime": "datetime"
+                    }
+                },
+                {
+                    "label": "Diagnosis",
+                    "properties": [
+                        "icd_code",      # indexed
+                        "long_title",    # indexed
+                        "synonyms",      # indexed
+                        "hadm_id",
+                        "subject_id",
+                        "seq_num",
+                        "icd_version"
+                    ],
+                    "property_types": {
+                        "icd_code": "string (indexed)",
+                        "long_title": "string (indexed)",
+                        "synonyms": "string[] (indexed)",
+                        "hadm_id": "string",
+                        "subject_id": "string",
+                        "seq_num": "integer",
+                        "icd_version": "integer"
+                    }
+                },
+                {
+                    "label": "Procedure",
+                    "properties": [
+                        "icd_code",      # indexed
+                        "long_title",    # indexed
+                        "hadm_id",
+                        "seq_num",
+                        "chartdate",
+                        "icd_version"
+                    ],
+                    "property_types": {
+                        "icd_code": "string (indexed)",
+                        "long_title": "string (indexed)",
+                        "hadm_id": "string",
+                        "seq_num": "integer",
+                        "chartdate": "datetime",
+                        "icd_version": "integer"
+                    }
+                }
+            ],
+            "relationships": [
+                {"relationshipType": "HAS_ADMISSION"},
+                {"relationshipType": "INCLUDES_DISCHARGE_NOTE"},
+                {"relationshipType": "INCLUDES_RADIOLOGY_REPORT"},
+                {"relationshipType": "INCLUDES_LAB_EVENT"},
+                {"relationshipType": "HAS_DIAGNOSIS"},
+                {"relationshipType": "HAS_PROCEDURE"},
+                {"relationshipType": "HAS_MEDICATION"}
+            ],
+            "constraints": [],  # Will be populated if needed
+            "indexes": []       # Will be populated if needed
         }
-        
-        # Get node labels and properties
-        node_query = """
-        CALL db.labels() YIELD label
-        WITH label
-        MATCH (n)
-        WHERE label IN labels(n)
-        WITH label, n
-        LIMIT 1
-        RETURN label, keys(n) as properties
-        """
-        nodes = await self.execute_read(node_query)
-        schema["nodes"] = nodes
-        
-        # Get relationship types
-        rel_query = """
-        CALL db.relationshipTypes() YIELD relationshipType
-        RETURN relationshipType
-        """
-        relationships = await self.execute_read(rel_query)
-        schema["relationships"] = relationships
-        
-        # Get constraints
-        constraint_query = "SHOW CONSTRAINTS"
-        try:
-            constraints = await self.execute_read(constraint_query)
-            schema["constraints"] = constraints
-        except:
-            logger.warning("Could not fetch constraints")
-        
-        # Get indexes
-        index_query = "SHOW INDEXES"
-        try:
-            indexes = await self.execute_read(index_query)
-            schema["indexes"] = indexes
-        except:
-            logger.warning("Could not fetch indexes")
         
         return schema
     

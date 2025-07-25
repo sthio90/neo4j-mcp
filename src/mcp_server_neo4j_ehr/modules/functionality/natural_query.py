@@ -104,28 +104,79 @@ def format_schema_for_llm(schema: Dict[str, Any]) -> str:
     """Format schema information for LLM context."""
     lines = []
     
-    # Node labels and properties
-    lines.append("NODES:")
+    # Node labels with detailed property information
+    lines.append("NODE TYPES AND PROPERTIES:")
+    lines.append("(Note: Properties marked as 'indexed' should be preferred in WHERE clauses for better performance)")
+    lines.append("")
+    
     for node in schema.get("nodes", []):
         label = node.get("label", "Unknown")
         properties = node.get("properties", [])
-        lines.append(f"- {label}: {', '.join(properties)}")
+        property_types = node.get("property_types", {})
+        
+        lines.append(f"Node: {label}")
+        lines.append("Properties:")
+        
+        # Group properties by type for better understanding
+        identifiers = []
+        timestamps = []
+        clinical_data = []
+        other = []
+        
+        for prop in properties:
+            prop_info = f"  - {prop}: {property_types.get(prop, 'string')}"
+            
+            # Categorize properties
+            if prop in ["subject_id", "hadm_id", "note_id", "lab_event_id"]:
+                identifiers.append(prop_info)
+            elif "time" in prop or "date" in prop or prop == "dod":
+                timestamps.append(prop_info)
+            elif prop in ["diagnosis", "medication", "icd_code", "long_title", "label", "value", "flag", "text"]:
+                clinical_data.append(prop_info)
+            else:
+                other.append(prop_info)
+        
+        if identifiers:
+            lines.append("  Identifiers:")
+            lines.extend(identifiers)
+        if timestamps:
+            lines.append("  Timestamps:")
+            lines.extend(timestamps)
+        if clinical_data:
+            lines.append("  Clinical Data:")
+            lines.extend(clinical_data)
+        if other:
+            lines.append("  Other:")
+            lines.extend(other)
+        
+        lines.append("")
     
-    # Relationships
-    lines.append("\nRELATIONSHIPS:")
-    for rel in schema.get("relationships", []):
-        rel_type = rel.get("relationshipType", "Unknown")
-        lines.append(f"- {rel_type}")
+    # Relationships with cardinality
+    lines.append("RELATIONSHIPS:")
+    lines.append("- (Patient)-[:HAS_ADMISSION]->(Admission)  [1 patient : many admissions]")
+    lines.append("- (Admission)-[:INCLUDES_DISCHARGE_NOTE]->(DischargeNote)  [1 admission : many notes]")
+    lines.append("- (Admission)-[:INCLUDES_RADIOLOGY_REPORT]->(RadiologyReport)  [1 admission : many reports]")
+    lines.append("- (Admission)-[:HAS_DIAGNOSIS]->(Diagnosis)  [1 admission : many diagnoses]")
+    lines.append("- (Admission)-[:HAS_PROCEDURE]->(Procedure)  [1 admission : many procedures]")
+    lines.append("- (Admission)-[:HAS_MEDICATION]->(Medication)  [1 admission : many medications]")
+    lines.append("- (Admission)-[:INCLUDES_LAB_EVENT]->(LabEvent)  [1 admission : many lab events]")
+    lines.append("")
     
-    # Key relationships based on our spec
-    lines.append("\nKEY RELATIONSHIPS:")
-    lines.append("- (Patient)-[:HAS_ADMISSION]->(Admission)")
-    lines.append("- (Admission)-[:INCLUDES_DISCHARGE_NOTE]->(DischargeNote)")
-    lines.append("- (Admission)-[:INCLUDES_RADIOLOGY_REPORT]->(RadiologyReport)")
-    lines.append("- (Admission)-[:HAS_DIAGNOSIS]->(Diagnosis)")
-    lines.append("- (Admission)-[:HAS_PROCEDURE]->(Procedure)")
-    lines.append("- (Admission)-[:HAS_MEDICATION]->(Medication)")
-    lines.append("- (Admission)-[:INCLUDES_LAB_EVENT]->(LabEvent)")
+    # Query guidelines
+    lines.append("QUERY GUIDELINES:")
+    lines.append("1. Use indexed properties in WHERE clauses when possible")
+    lines.append("2. For text searches in notes, use: WHERE toLower(n.text) CONTAINS toLower('search term')")
+    lines.append("3. For date comparisons, use: WHERE n.admittime >= datetime('2024-01-01')")
+    lines.append("4. For finding abnormal lab results, check: WHERE l.flag IS NOT NULL AND l.flag <> 'normal'")
+    lines.append("5. Always include LIMIT to prevent large result sets")
+    lines.append("")
+    
+    # Common patterns
+    lines.append("COMMON QUERY PATTERNS:")
+    lines.append("- Patient with admissions: MATCH (p:Patient {subject_id: 'X'})-[:HAS_ADMISSION]->(a:Admission)")
+    lines.append("- Admission with all clinical data: MATCH (a:Admission {hadm_id: 'X'})-[r]->(n)")
+    lines.append("- Lab results for patient: MATCH (l:LabEvent) WHERE l.subject_id = 'X'")
+    lines.append("- Diagnoses by ICD code: MATCH (d:Diagnosis) WHERE d.icd_code STARTS WITH 'I21'")
     
     return "\n".join(lines)
 
