@@ -44,7 +44,7 @@ async def natural_query(
         
         logger.info("Sending query to OpenAI GPT-4...")
         response = client.chat.completions.create(
-            model="gpt-4",
+            model="gpt-4.1-nano",
             messages=messages,
             temperature=0.1,
             max_tokens=500
