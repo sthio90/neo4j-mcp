@@ -39,14 +39,85 @@ This demo provides a user-friendly HTML interface to interact with all the Neo4j
 
 ## Quick Start
 
-1. **Start the MCP Server in HTTP Mode**
-   ```bash
-   cd demo
-   python run_http_server.py
-   ```
-   
-   The server will start on `http://localhost:8080` with CORS enabled.
-   The script will automatically load your `.env` file from the project root.
+### Option 1: Using uv (Recommended)
+
+**Start the MCP Server in stdio mode (default):**
+```bash
+uv run mcp-server-neo4j-ehr --neo4j-password your_password
+```
+
+**Start the MCP Server in HTTP mode:**
+```bash
+uv run mcp-server-neo4j-ehr \
+  --neo4j-password your_password \
+  --transport http \
+  --host 127.0.0.1 \
+  --port 8080
+```
+
+**With all options:**
+```bash
+uv run mcp-server-neo4j-ehr \
+  --neo4j-uri bolt://localhost:7687 \
+  --neo4j-username neo4j \
+  --neo4j-password your_password \
+  --neo4j-database neo4j \
+  --openai-api-key your_openai_key \
+  --transport http \
+  --host 127.0.0.1 \
+  --port 8080
+```
+
+### Option 2: Using Python Module
+
+**Start the MCP Server in stdio mode:**
+```bash
+python -m mcp_server_neo4j_ehr \
+  --neo4j-uri bolt://localhost:7687 \
+  --neo4j-username neo4j \
+  --neo4j-password your_password \
+  --transport stdio
+```
+
+**Start the MCP Server in HTTP mode:**
+```bash
+python -m mcp_server_neo4j_ehr \
+  --neo4j-uri bolt://localhost:7687 \
+  --neo4j-username neo4j \
+  --neo4j-password your_password \
+  --transport http \
+  --host 127.0.0.1 \
+  --port 8080
+```
+
+### Option 3: Legacy HTTP Server Script (if available)
+```bash
+cd demo
+python run_http_server.py
+```
+
+## Testing with MCP Inspector
+
+Once your server is running, you can test it with the MCP Inspector:
+
+**For stdio transport:**
+```bash
+npx @modelcontextprotocol/inspector python -m mcp_server_neo4j_ehr \
+  --neo4j-uri bolt://localhost:7687 \
+  --neo4j-username neo4j \
+  --neo4j-password your_password \
+  --transport stdio
+```
+
+**For HTTP transport:**
+```bash
+# First start your server with HTTP transport, then:
+npx @modelcontextprotocol/inspector http://127.0.0.1:8080/mcp/
+```
+
+## Using the Web Demo
+
+1. **Start the Server in HTTP Mode** (see commands above)
 
 2. **Open the Demo Interface**
    - Open `demo/index.html` in your web browser
@@ -59,6 +130,24 @@ This demo provides a user-friendly HTML interface to interact with all the Neo4j
 3. **Connect to the Server**
    - Click the "Connect" button in the interface
    - The status indicator should turn green when connected
+
+## Command Line Options
+
+See all available options:
+```bash
+uv run mcp-server-neo4j-ehr --help
+```
+
+Available options include:
+- `--neo4j-uri`: Neo4j connection URI (default: bolt://localhost:7687)
+- `--neo4j-username`: Neo4j username (default: neo4j)
+- `--neo4j-password`: Neo4j password (required)
+- `--neo4j-database`: Neo4j database name (default: neo4j)
+- `--openai-api-key`: OpenAI API key for natural language queries
+- `--transport`: Transport type (stdio, http, sse) (default: stdio)
+- `--host`: Host for HTTP/SSE transport (default: 127.0.0.1)
+- `--port`: Port for HTTP/SSE transport (default: 8000)
+- `--path`: Path for HTTP transport (default: /mcp/)
 
 ## Testing the Demo
 

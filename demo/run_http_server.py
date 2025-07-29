@@ -6,7 +6,6 @@ This script runs the Neo4j MCP server in HTTP mode with CORS enabled,
 allowing the HTML demo interface to connect and interact with it.
 """
 
-import asyncio
 import logging
 import os
 import sys
@@ -26,15 +25,7 @@ else:
     print(f"⚠️  No .env file found at {env_path}")
 
 try:
-    from mcp import server
-    from mcp.server import Server
-    from mcp.server.stdio import stdio_server
-except ImportError:
-    print("Error: MCP library not found. Please install it with: pip install mcp")
-    sys.exit(1)
-
-try:
-    from src.mcp_server_neo4j_ehr import create_server
+    from src.mcp_server_neo4j_ehr.server import main as server_main
 except ImportError:
     print("Error: Neo4j MCP server not found. Please ensure the server is properly installed.")
     print("Try running: pip install -e . from the project root directory")
@@ -47,7 +38,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-async def run_http_server():
+def run_http_server():
     """Run the MCP server in HTTP mode with CORS enabled."""
     
     # Check for required environment variables
@@ -64,12 +55,12 @@ async def run_http_server():
         logger.warning("OPENAI_API_KEY not set. Natural language queries will not work.")
     
     try:
-        # Create the server instance
-        logger.info("Creating Neo4j MCP server instance...")
-        mcp_server = await create_server()
-        
-        # Configure HTTP transport with CORS
-        from mcp.server.http import http_server
+        # Get environment variables
+        neo4j_uri = os.getenv('NEO4J_URI', 'bolt://localhost:7687')
+        neo4j_username = os.getenv('NEO4J_USERNAME', 'neo4j')
+        neo4j_password = os.getenv('NEO4J_PASSWORD')
+        neo4j_database = os.getenv('NEO4J_DATABASE', 'neo4j')
+        openai_api_key = os.getenv('OPENAI_API_KEY')
         
         host = "localhost"
         port = 8080
@@ -78,19 +69,18 @@ async def run_http_server():
         logger.info("CORS is enabled for all origins (*)") 
         logger.info("Press Ctrl+C to stop the server")
         
-        # Run the HTTP server
-        async with http_server(
-            mcp_server,
+        # Use the updated server main function
+        server_main(
+            neo4j_uri=neo4j_uri,
+            neo4j_username=neo4j_username,
+            neo4j_password=neo4j_password,
+            neo4j_database=neo4j_database,
+            openai_api_key_param=openai_api_key,
+            transport="http",
             host=host,
             port=port,
-            cors_headers={
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-                "Access-Control-Allow-Headers": "Content-Type",
-            }
-        ):
-            # Keep the server running
-            await asyncio.Event().wait()
+            path="/mcp/"
+        )
             
     except Exception as e:
         logger.error(f"Failed to start server: {e}")
@@ -106,7 +96,7 @@ def main():
     print("3. Required Python packages installed\n")
     
     try:
-        asyncio.run(run_http_server())
+        run_http_server()
     except KeyboardInterrupt:
         print("\n\nServer stopped by user")
     except Exception as e:

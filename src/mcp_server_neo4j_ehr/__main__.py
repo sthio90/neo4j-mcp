@@ -1,7 +1,6 @@
 """Entry point for the Neo4j EHR MCP Server."""
 
 import os
-import asyncio
 import argparse
 from dotenv import load_dotenv
 from .server import main as server_main
@@ -37,7 +36,7 @@ def main():
         parser.error("Neo4j password is required (via --neo4j-password or NEO4J_PASSWORD env var)")
     
     # Run the server
-    asyncio.run(server_main(
+    server_main(
         args.neo4j_uri,
         args.neo4j_username,
         args.neo4j_password,
@@ -47,7 +46,7 @@ def main():
         args.host,
         args.port,
         args.path
-    ))
+    )
 
 
 if __name__ == "__main__":

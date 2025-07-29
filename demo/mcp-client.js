@@ -1,38 +1,63 @@
-// MCP Client for Neo4j EHR Server
+// MCP Client for Neo4j EHR Server (FastMCP HTTP with SSE)
 class MCPClient {
     constructor(serverUrl) {
         this.serverUrl = serverUrl;
         this.requestId = 0;
         this.connected = false;
+        this.sessionId = null;
     }
 
     async connect() {
         try {
-            // Test connection by calling initialize
-            const response = await fetch(this.serverUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    jsonrpc: '2.0',
-                    method: 'initialize',
-                    params: {
-                        protocolVersion: '2024-11-05',
-                        capabilities: {}
-                    },
-                    id: ++this.requestId
-                })
+            // First, establish a session by making any request to get session ID
+            await this.establishSession();
+            
+            // Then test connection by calling a simple tool
+            const result = await this.sendRequest('tools/call', {
+                name: 'ehr_get_schema',
+                arguments: { format: 'json' }
             });
             
-            if (response.ok) {
+            if (result && !result.error) {
                 this.connected = true;
+                console.log('Connected! Schema tool test successful');
                 return true;
             }
+            console.error('Connection test failed:', result?.error);
             return false;
         } catch (error) {
             console.error('Connection error:', error);
             return false;
+        }
+    }
+
+    async establishSession() {
+        try {
+            // Make a dummy request to establish session
+            const response = await fetch(this.serverUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json, text/event-stream',
+                },
+                body: JSON.stringify({
+                    jsonrpc: '2.0',
+                    method: 'tools/call',
+                    params: { name: 'ehr_get_schema', arguments: { format: 'json' } },
+                    id: ++this.requestId
+                })
+            });
+
+            // Extract session ID from response headers
+            this.sessionId = response.headers.get('mcp-session-id');
+            console.log('Got session ID:', this.sessionId);
+            
+            if (!this.sessionId) {
+                throw new Error('No session ID received from server');
+            }
+        } catch (error) {
+            console.error('Failed to establish session:', error);
+            throw error;
         }
     }
 
@@ -42,33 +67,79 @@ class MCPClient {
         }
 
         try {
-            const response = await fetch(this.serverUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    jsonrpc: '2.0',
-                    method: 'tools/call',
-                    params: {
-                        name: toolName,
-                        arguments: args
-                    },
-                    id: ++this.requestId
-                })
+            const result = await this.sendRequest('tools/call', {
+                name: toolName,
+                arguments: args
             });
-
-            const data = await response.json();
             
-            if (data.error) {
-                throw new Error(data.error.message || 'Unknown error');
+            if (result.error) {
+                throw new Error(result.error.message || 'Unknown error');
             }
 
-            return data.result;
+            return result.result;
         } catch (error) {
             console.error('Tool call error:', error);
             throw error;
         }
+    }
+
+    async sendRequest(method, params) {
+        const requestId = ++this.requestId;
+        
+        const headers = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json, text/event-stream',
+        };
+        
+        // Include session ID if we have it
+        if (this.sessionId) {
+            headers['mcp-session-id'] = this.sessionId;
+        }
+        
+        const response = await fetch(this.serverUrl, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify({
+                jsonrpc: '2.0',
+                method: method,
+                params: params,
+                id: requestId
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        // Handle Server-Sent Events response or regular JSON
+        const text = await response.text();
+        
+        // Try to parse as SSE first
+        const lines = text.split('\n');
+        for (const line of lines) {
+            if (line.startsWith('data: ')) {
+                try {
+                    const data = JSON.parse(line.substring(6));
+                    if (data.id === requestId) {
+                        return data;
+                    }
+                } catch (e) {
+                    // Continue to next line
+                }
+            }
+        }
+        
+        // If no SSE data found, try parsing as regular JSON
+        try {
+            const data = JSON.parse(text);
+            if (data.id === requestId) {
+                return data;
+            }
+        } catch (e) {
+            // Not JSON either
+        }
+        
+        throw new Error('No matching response found');
     }
 }
 
@@ -463,6 +534,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Set default server URL
     const serverUrl = document.getElementById('server-url');
     if (!serverUrl.value) {
-        serverUrl.value = 'http://localhost:8080';
+        serverUrl.value = 'http://localhost:8080/mcp/';
     }
 });
