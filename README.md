@@ -15,8 +15,9 @@ This enables powerful GraphRAG (Retrieval-Augmented Generation) workflows where 
 ## Features
 
 - **Natural Language Querying**: Ask complex questions in plain English. The server leverages an LLM that can inspect the graph schema to generate accurate Cypher queries.
+- **Simple Note Retrieval**: Get discharge summaries or radiology reports by patient/admission ID without complex searching.
 - **Structured API**: A robust set of commands for precise data retrieval (e.g., get a specific patient, list diagnoses for an admission).
-- **Semantic Search**: Utilizes vector embeddings on clinical notes to find information based on meaning, not just keywords.
+- **Content-Based Search**: Use natural language queries to search within clinical notes and find specific medical information.
 - **Schema Awareness**: Includes a tool to fetch the database schema, which is crucial for enabling an LLM to write accurate queries.
 - **Flexible Output**: Get results in JSON for programmatic use or in human-readable tables and markdown.
 
@@ -148,9 +149,9 @@ To use this server with Claude Desktop, add it to your MCP settings:
   ehr patient "10000032" --include-diagnoses=True --include-medications=True
   ```
 
-- **Pull a discharge summary to use as context for an LLM:**
+- **Get the most recent discharge summary:**
   ```
-  ehr search-notes "" --patient-id="10000032" --note-type=discharge --format=text
+  ehr get-clinical-notes --patient-id="10000032" --note-type=discharge --limit=1 --format=text
   ```
 
 - **Ask a question in natural language:**
@@ -177,11 +178,10 @@ ehr patient <subject_id> \
     --include-lab-events: bool = False \
     --format: json | table = json
 
-# Search through clinical notes (discharge or radiology)
-ehr search-notes <query> \
+# Retrieve clinical notes by type (discharge or radiology)
+ehr get-clinical-notes \
     --note-type: discharge | radiology | all = all \
-    --limit: int = 5 \
-    --semantic: bool = False \
+    --limit: int = 10 \
     --patient-id: str (optional) \
     --admission-id: str (optional) \
     --format: json | text | table = json
@@ -226,6 +226,28 @@ ehr natural-query <query> \
 # Get the database schema
 ehr get-schema \
     --format: json | markdown = markdown
+```
+
+### Clinical Notes: Two Approaches
+
+**For simple note retrieval by ID:**
+```bash
+# Get all radiology reports for a patient
+ehr get-clinical-notes --note-type=radiology --patient-id="10461137"
+
+# Get discharge summary for specific admission
+ehr get-clinical-notes --note-type=discharge --admission-id="25236814" --limit=1
+
+# Get most recent discharge summary (sorted by charttime)
+ehr get-clinical-notes --note-type=discharge --patient-id="10461137" --limit=1
+```
+
+**For content-based searches:**
+```bash
+# Search within note content using natural language
+ehr natural-query "Find all notes mentioning pulmonary fibrosis for patient 10461137"
+ehr natural-query "What imaging studies were done for this patient's respiratory issues?"
+ehr natural-query "Show me abnormal lab results from the most recent admission"
 ```
 
 ## Development

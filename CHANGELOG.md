@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **BREAKING**: Refactored `ehr_search_notes` tool → `ehr_get_clinical_notes`
+  - Removed `query` parameter (no more text-based searching)
+  - Removed `semantic` parameter (no more AI-powered semantic search)
+  - Simplified to retrieve notes by type, patient ID, or admission ID only
+  - Results ordered by `charttime DESC` (most recent first)
+  - Improved Claude Desktop integration with clearer parameter usage
+- Tool separation: Use `ehr_get_clinical_notes` for simple retrieval, `ehr_natural_query` for content searches
+
 ### Added
 - Comprehensive test suite with 71 tests covering all functionality
 - Unit tests for all 8 MCP tools with mocked dependencies

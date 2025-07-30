@@ -9,7 +9,7 @@ from .modules.db_connection import Neo4jConnection
 from .modules.constants import *
 from .modules.data_types import OutputFormat, NoteType
 from .modules.functionality.patient import get_patient
-from .modules.functionality.search_notes import search_notes
+from .modules.functionality.get_clinical_notes import get_clinical_notes
 from .modules.functionality.list_diagnoses import list_diagnoses
 from .modules.functionality.list_lab_events import list_lab_events
 from .modules.functionality.list_medications import list_medications
@@ -48,21 +48,25 @@ async def ehr_patient(
 
 
 @mcp.tool
-async def ehr_search_notes(
-    query: str,
+async def ehr_get_clinical_notes(
     note_type: NoteType = NOTE_TYPE_ALL,
     limit: int = DEFAULT_NOTE_SEARCH_LIMIT,
-    semantic: bool = False,
     patient_id: Optional[str] = None,
     admission_id: Optional[str] = None,
     format: OutputFormat = OUTPUT_FORMAT_JSON
 ) -> str:
-    """Search through clinical notes (discharge or radiology)."""
+    """Retrieve clinical notes by type (discharge or radiology).
+    
+    For discharge summaries: Use admission_id to get notes for a specific admission.
+    For radiology reports: Use patient_id to get all imaging reports for a patient.
+    To get all notes: Specify note_type and patient_id or admission_id.
+    
+    This tool returns ALL matching notes without filtering by content."""
     if not db_connection:
         return '{"error": "Database connection not initialized"}'
-    return await search_notes(
-        db_connection, query, note_type, limit, semantic,
-        patient_id, admission_id, format, openai_api_key
+    return await get_clinical_notes(
+        db_connection, note_type, limit,
+        patient_id, admission_id, format
     )
 
 
